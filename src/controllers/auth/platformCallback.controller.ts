@@ -17,13 +17,19 @@ export const platformCallbackController = async (
     }
 
     const adapter = getPlatformAdapter(platform as Platform);
+
     await adapter.handleCallback(userId, req.query);
 
-    res.json({
-      success: true,
-      message: `${platform} account connected successfully.`,
-      platform,
-    });
+    // Import history before redirecting so the dashboard has data immediately.
+    if (adapter.getHistory) {
+      await adapter.getHistory(userId);
+    }
+
+    const frontendUrl = (
+      process.env.FRONTEND_URL || "http://127.0.0.1:5500"
+    ).replace(/\/$/, "");
+
+    res.redirect(`${frontendUrl}/dashboard.html`);
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,4 @@
-import { z } from "../openapi/zod";
+import { z } from "zod";
 
 export const exclusionParamsSchema = z.object({
   type: z.enum(["artist", "track"]),

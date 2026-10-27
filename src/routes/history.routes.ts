@@ -21,7 +21,7 @@ router.use(generalLimiter);
 
 router.get(
   "/:platform/recent",
-  validateRequest(getHistorySchema, "body"),
+  validateRequest(getHistorySchema, "params"),
   checkAuth,
   validatePlatform,
   getHistoryController,

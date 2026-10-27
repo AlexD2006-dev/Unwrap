@@ -8,22 +8,34 @@ export const saveListeningHistory = async (
   userId: string,
 ): Promise<ListeningHistory> => {
   try {
-    const entry = await prisma.listeningHistory.create({
+    return await prisma.listeningHistory.create({
       data: {
-        userId: userId,
+        userId,
         platformName: listeningHistory.platformName,
-        trackId: trackId,
+        trackId,
         playedAt: listeningHistory.playedAt,
         source: listeningHistory.source,
         uploadedAt: listeningHistory.uploadedAt,
       },
     });
-
-    return entry;
   } catch (error: any) {
     if (error.code === "P2002") {
-      return saveListeningHistory(listeningHistory, trackId, userId);
+      // Reuse an existing event instead of retrying the same unique insert.
+      const existingEntry = await prisma.listeningHistory.findUnique({
+        where: {
+          userId_trackId_playedAt: {
+            userId,
+            trackId,
+            playedAt: listeningHistory.playedAt,
+          },
+        },
+      });
+
+      if (existingEntry) {
+        return existingEntry;
+      }
     }
+
     throw error;
   }
 };

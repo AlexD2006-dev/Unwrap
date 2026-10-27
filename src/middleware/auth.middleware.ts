@@ -22,12 +22,13 @@ export const checkAuth = async (
   res: Response,
   next: NextFunction,
 ) => {
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development" &&
+      process.env.USE_REAL_AUTH !== "true") {
     req.user = { id: "1234" };
     return next();
   }
 
-  const accessToken = req.cookies.accessToken;
+  const accessToken = req.cookies["__Host-session"] ?? req.cookies.accessToken;
   if (!accessToken) {
     return next(new ApiError(401, "UNAUTHORIZED", "Missing access token"));
   }

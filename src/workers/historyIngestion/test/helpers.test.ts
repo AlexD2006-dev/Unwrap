@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, mock } from "bun:test";
 
-import { toUploadData, toSpotifyDTOs } from "../helpers";
+
 import { redisCache } from "@/lib/redis";
 import type { UploadData, UploadArtist } from "../../types";
 import { CACHE_TTL_SEC } from "@/workers/shared/rateLimit";
@@ -33,35 +33,39 @@ const baseRawEntry = {
 const redisSetMock = mock();
 const getSpotifyArtistIdsMock = mock();
 
-mock.module("@/platforms/spotify/utils", () => ({
-  getSpotifyArtistIds: getSpotifyArtistIdsMock,
-}));
 
 const mockFindOrCreateTrack = mock();
 const mockFindOrCreateArtist = mock();
 const mockConnectArtistsAndTrack = mock();
 const mockSaveListeningHistory = mock();
 
-mock.module("@/models/track.model", () => ({
-  findOrCreateTrack: mockFindOrCreateTrack,
-  connectArtistsAndTrack: mockConnectArtistsAndTrack,
-}));
-
-mock.module("@/models/artist.model", () => ({
-  findOrCreateArtist: mockFindOrCreateArtist,
-}));
-
-mock.module("@/models/listeningHistory.model", () => ({
-  saveListeningHistory: mockSaveListeningHistory,
-}));
-
 const mockTransaction = mock(async (fn: Function) => fn());
 const originalTransaction = prisma.$transaction;
 
 const originalRedisSet = redisCache.set;
 
-const { saveHistoryRecords, fetchAndCacheSpotifyArtists } =
-  await import("../helpers");
+const {
+  createSaveHistoryRecords,
+  createFetchAndCacheSpotifyArtists,
+  toUploadData,
+  toSpotifyDTOs,
+} = await import("../helpers");
+
+const saveHistoryRecords = createSaveHistoryRecords({
+  findOrCreateTrack: mockFindOrCreateTrack as any,
+  findOrCreateArtist: mockFindOrCreateArtist as any,
+  connectArtistsAndTrack: mockConnectArtistsAndTrack as any,
+  saveListeningHistory: mockSaveListeningHistory as any,
+  transaction: mockTransaction as any,
+});
+
+const fetchAndCacheSpotifyArtists = createFetchAndCacheSpotifyArtists({
+  getSpotifyArtistIds: getSpotifyArtistIdsMock as any,
+  cache: {
+    set: redisSetMock as any,
+  },
+  cacheTtlSec: CACHE_TTL_SEC,
+});
 
 const mockTrack: SpotifyTrackDTO = {
   platformTrackId: "sp-track-1",
